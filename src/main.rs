@@ -1,5 +1,8 @@
 use anyhow::Result as AnyResult;
-use std::{env::args, fs::File, io::Write, os::unix::fs::FileExt, thread, time::Instant};
+use std::{
+    collections::BTreeMap, env::args, fs::File, io::Write, os::unix::fs::FileExt, thread,
+    time::Instant,
+};
 
 const CHUNK_SIZE: u64 = 64 * 1024 * 1024;
 
@@ -25,24 +28,6 @@ impl Record {
 }
 
 type Key = (u64, u64);
-struct MapRecord(pub Key, pub Record);
-
-impl MapRecord {
-    #[inline(always)]
-    fn new(hash: Key, value: f32) -> Self {
-        Self(hash, Record::new(value))
-    }
-
-    #[inline(always)]
-    fn update(&mut self, other: Self) {
-        let s = &mut self.1;
-        let o = other.1;
-        s.count += o.count;
-        s.sum += o.sum;
-        s.max = s.max.max(o.max);
-        s.min = s.min.min(o.min);
-    }
-}
 
 fn read_chunk(file: &File, offset: u64) -> Vec<u8> {
     let mut buffer = vec![0; (CHUNK_SIZE + CHUNK_EXCESS) as usize];
@@ -64,70 +49,39 @@ fn read_chunk(file: &File, offset: u64) -> Vec<u8> {
 }
 
 #[inline(always)]
-fn put_in_map(map: &mut Vec<MapRecord>, new: MapRecord) {
-    for record in &mut *map {
-        if record.0 == new.0 {
-            record.update(new);
-            return;
-        }
-    }
-    map.push(new);
-}
-#[inline(always)]
 fn s_parse(b: &[u8]) -> f32 {
-    let len = b.len();
-
     let mut f: f32 = 0.0;
     let mut sign: f32 = 1.0;
+    let mut seen_dot = false;
+    let mut pos = 1.0f32;
 
-    let mut iter = 0usize;
-    if b[0] == b'-' {
-        iter += 1;
-        sign = -1.0;
-    }
+    for byte in b {
+        let byte = *byte;
+        match byte {
+            b'-' => {
+                sign = -1.0;
+            }
+            b'.' => {
+                seen_dot = true;
+                pos = 0.1;
+            }
+            _ => {
+                f += sign * pos * (byte - 48) as f32;
 
-    while iter < len && b[iter] != b'.' {
-        f += sign * (b[iter] - 48) as f32;
-        f *= 10.;
-        iter += 1;
-    }
-    f /= 10.;
-
-    iter += 1;
-    let mut pos = 0.1f32;
-    while iter < len {
-        f += pos * sign * (b[iter] - 48) as f32;
-        iter += 1;
-        pos /= 10.;
+                if !seen_dot {
+                    pos *= 10.0;
+                } else {
+                    pos /= 10.0;
+                }
+            }
+        }
     }
 
     f
 }
 
-// fn process_chunk(buffer: Vec<u8>) -> Vec<MapRecord> {
-//     let mut map: Vec<MapRecord> = Vec::with_capacity(512);
-//     let splitted = buffer.split(|b| *b == b'\n');
-//     for line in splitted {
-//         let mut semi = 0usize;
-//         while line[semi] != b';' {
-//             semi += 1;
-//         }
-
-//         let mut arr = [0u8; 16];
-//         for i in 0..16.min(semi) {
-//             arr[i] = line[i];
-//         }
-
-//         let key = unsafe { std::mem::transmute(arr) };
-
-//         let value = s_parse(&line[semi + 1..line.len()]);
-//         put_in_map(&mut map, MapRecord::new(key, value as f32));
-//     }
-//     map
-// }
-
-fn process_chunk_v2(buffer: Vec<u8>) -> Vec<MapRecord> {
-    let mut map = Vec::with_capacity(512);
+fn process_chunk_v2(buffer: Vec<u8>) -> BTreeMap<Key, Record> {
+    let mut bmap = BTreeMap::<Key, Record>::new();
     let mut line_ind = 0usize;
     let len = buffer.len();
     while line_ind < len {
@@ -147,11 +101,20 @@ fn process_chunk_v2(buffer: Vec<u8>) -> Vec<MapRecord> {
 
         let key = unsafe { std::mem::transmute(arr) };
         let value = s_parse(&buffer[semi + 1..end]);
-        put_in_map(&mut map, MapRecord::new(key, value));
+
+        if let Some(record) = bmap.get_mut(&key) {
+            record.count += 1;
+            record.sum += value;
+            record.max = record.max.max(value);
+            record.min = record.min.min(value);
+        } else {
+            bmap.insert(key, Record::new(value));
+        }
+
         line_ind = end + 1;
     }
 
-    map
+    bmap
 }
 
 fn main() -> AnyResult<()> {
@@ -170,7 +133,7 @@ fn main() -> AnyResult<()> {
     let creation_start = Instant::now();
     while offset < file.metadata()?.len() - CHUNK_SIZE {
         let file_c = file.try_clone()?;
-        let handle: thread::JoinHandle<Vec<MapRecord>> =
+        let handle: thread::JoinHandle<BTreeMap<Key, Record>> =
             thread::spawn(move || process_chunk_v2(read_chunk(&file_c, offset)));
         offset += CHUNK_SIZE;
         handles.push(handle);
@@ -179,11 +142,18 @@ fn main() -> AnyResult<()> {
 
     println!("handles:{}", handles.len());
     let awaiting_start = Instant::now();
-    let mut map: Vec<MapRecord> = Vec::with_capacity(512);
+    let mut map = BTreeMap::<Key, Record>::new();
     for handle in handles {
         let handle_map = handle.join().unwrap();
-        for record in handle_map {
-            put_in_map(&mut map, record)
+        for (key, other) in handle_map {
+            if let Some(record) = map.get_mut(&key) {
+                record.count += other.count;
+                record.sum += other.sum;
+                record.max = record.max.max(other.max);
+                record.min = record.min.min(other.min);
+            } else {
+                map.insert(key, other);
+            }
         }
     }
 
@@ -197,16 +167,14 @@ fn main() -> AnyResult<()> {
         let name_buff: [u8; 16] = unsafe { std::mem::transmute(name) };
         let line = format!(
             "{} Avg:{:.1}, Min:{}, Max:{}\n",
-            String::from_utf8_lossy(&name_buff),
+            String::from_utf8_lossy(&name_buff).trim().trim_matches(char::from(0)),
             rec.sum / rec.count as f32,
             rec.min,
             rec.max
         );
-        let line_len = line.len();
-        let written = file.write(line.as_bytes()).expect("unable to write");
-        assert_eq!(line_len, written);
+        file.write(&line.as_bytes())?;
     }
     file.flush()?;
 
-    return Ok(());
+    Ok(())
 }
