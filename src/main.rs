@@ -1,8 +1,9 @@
 use anyhow::Result as AnyResult;
-use std::{
-    collections::BTreeMap, env::args, fs::File, io::Write, os::unix::fs::FileExt, thread,
+use std::{ env::args, fs::File, io::Write, os::unix::fs::FileExt, thread,
     time::Instant,
 };
+
+use ahash::AHashMap;
 
 const CHUNK_SIZE: u64 = 64 * 1024 * 1024;
 
@@ -80,8 +81,8 @@ fn s_parse(b: &[u8]) -> f32 {
     f
 }
 
-fn process_chunk_v2(buffer: Vec<u8>) -> BTreeMap<Key, Record> {
-    let mut bmap = BTreeMap::<Key, Record>::new();
+fn process_chunk_v2(buffer: Vec<u8>) -> AHashMap<Key, Record> {
+    let mut bmap = AHashMap::<Key, Record>::new();
     let mut line_ind = 0usize;
     let len = buffer.len();
     while line_ind < len {
@@ -133,7 +134,7 @@ fn main() -> AnyResult<()> {
     let creation_start = Instant::now();
     while offset < file.metadata()?.len() - CHUNK_SIZE {
         let file_c = file.try_clone()?;
-        let handle: thread::JoinHandle<BTreeMap<Key, Record>> =
+        let handle: thread::JoinHandle<AHashMap<Key, Record>> =
             thread::spawn(move || process_chunk_v2(read_chunk(&file_c, offset)));
         offset += CHUNK_SIZE;
         handles.push(handle);
@@ -142,7 +143,7 @@ fn main() -> AnyResult<()> {
 
     println!("handles:{}", handles.len());
     let awaiting_start = Instant::now();
-    let mut map = BTreeMap::<Key, Record>::new();
+    let mut map = AHashMap::<Key, Record>::new();
     for handle in handles {
         let handle_map = handle.join().unwrap();
         for (key, other) in handle_map {
@@ -167,7 +168,9 @@ fn main() -> AnyResult<()> {
         let name_buff: [u8; 16] = unsafe { std::mem::transmute(name) };
         let line = format!(
             "{} Avg:{:.1}, Min:{}, Max:{}\n",
-            String::from_utf8_lossy(&name_buff).trim().trim_matches(char::from(0)),
+            String::from_utf8_lossy(&name_buff)
+                .trim()
+                .trim_matches(char::from(0)),
             rec.sum / rec.count as f32,
             rec.min,
             rec.max
