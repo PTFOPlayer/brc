@@ -1,7 +1,5 @@
 use anyhow::Result as AnyResult;
-use std::{ env::args, fs::File, io::Write, os::unix::fs::FileExt, thread,
-    time::Instant,
-};
+use std::{env::args, fs::File, io::Write, os::unix::fs::FileExt, thread, time::Instant};
 
 use ahash::AHashMap;
 
@@ -28,20 +26,17 @@ impl Record {
     }
 }
 
-type Key = (u64, u64);
-
 fn read_chunk(file: &File, offset: u64) -> Vec<u8> {
     let mut buffer = vec![0; (CHUNK_SIZE + CHUNK_EXCESS) as usize];
     let len = buffer.len() - CHUNK_EXCESS as usize;
     file.read_exact_at(buffer.as_mut(), offset).unwrap();
 
     let mut start = 0 as usize;
-    if offset != 0 {
-        while buffer[start] != b'\n' {
-            start += 1;
-        }
+
+    while offset != 0 && buffer[start + 1] != b'\n' {
         start += 1;
     }
+
     let mut end = len - 1;
     while buffer[end] != b'\n' {
         end += 1;
@@ -52,12 +47,11 @@ fn read_chunk(file: &File, offset: u64) -> Vec<u8> {
 #[inline(always)]
 fn s_parse(b: &[u8]) -> f32 {
     let mut f: f32 = 0.0;
-    let mut sign: f32 = 1.0;
+    let mut sign = 1.0;
     let mut seen_dot = false;
     let mut pos = 1.0f32;
 
     for byte in b {
-        let byte = *byte;
         match byte {
             b'-' => {
                 sign = -1.0;
@@ -66,7 +60,7 @@ fn s_parse(b: &[u8]) -> f32 {
                 seen_dot = true;
                 pos = 0.1;
             }
-            _ => {
+            byte => {
                 f += sign * pos * (byte - 48) as f32;
 
                 if !seen_dot {
@@ -81,35 +75,34 @@ fn s_parse(b: &[u8]) -> f32 {
     f
 }
 
+type Key = [u8; 32];
+
 fn process_chunk_v2(buffer: Vec<u8>) -> AHashMap<Key, Record> {
-    let mut bmap = AHashMap::<Key, Record>::new();
+    let mut bmap = AHashMap::<Key, Record>::with_capacity(512);
     let mut line_ind = 0usize;
     let len = buffer.len();
     while line_ind < len {
         let mut end = line_ind;
+        let mut semi = line_ind;
         while end < len && buffer[end] != b'\n' {
+            if buffer[end] == b';' {
+                semi = end;
+            }
             end += 1;
         }
-        let mut semi = end - 1;
-        while buffer[semi] != b';' {
-            semi -= 1;
-        }
 
-        let mut arr = [0u8; 16];
-        for i in line_ind..(line_ind + 16).min(semi) {
-            arr[i - line_ind] = buffer[i];
-        }
+        let mut arr = Key::default();
+        arr[..semi - line_ind].copy_from_slice(&buffer[line_ind..semi]);
 
-        let key = unsafe { std::mem::transmute(arr) };
         let value = s_parse(&buffer[semi + 1..end]);
 
-        if let Some(record) = bmap.get_mut(&key) {
+        if let Some(record) = bmap.get_mut(&arr) {
             record.count += 1;
             record.sum += value;
             record.max = record.max.max(value);
             record.min = record.min.min(value);
         } else {
-            bmap.insert(key, Record::new(value));
+            bmap.insert(arr, Record::new(value));
         }
 
         line_ind = end + 1;
@@ -129,7 +122,7 @@ fn main() -> AnyResult<()> {
     let file = File::open(path)?;
 
     let mut offset = 0;
-    let mut handles = Vec::with_capacity(512);
+    let mut handles = Vec::with_capacity(256);
 
     let creation_start = Instant::now();
     while offset < file.metadata()?.len() - CHUNK_SIZE {
@@ -143,7 +136,7 @@ fn main() -> AnyResult<()> {
 
     println!("handles:{}", handles.len());
     let awaiting_start = Instant::now();
-    let mut map = AHashMap::<Key, Record>::new();
+    let mut map = AHashMap::<Key, Record>::with_capacity(512);
     for handle in handles {
         let handle_map = handle.join().unwrap();
         for (key, other) in handle_map {
@@ -165,7 +158,7 @@ fn main() -> AnyResult<()> {
     let mut file = File::create("./out.txt")?;
     for record in map {
         let (name, rec) = (record.0, record.1);
-        let name_buff: [u8; 16] = unsafe { std::mem::transmute(name) };
+        let name_buff: Key = unsafe { std::mem::transmute(name) };
         let line = format!(
             "{} Avg:{:.1}, Min:{}, Max:{}\n",
             String::from_utf8_lossy(&name_buff)
