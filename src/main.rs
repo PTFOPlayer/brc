@@ -3,20 +3,20 @@ use std::{env::args, fs::File, io::Write, os::unix::fs::FileExt, thread, time::I
 
 use ahash::AHashMap;
 
-const CHUNK_SIZE: u64 = 64 * 1024 * 1024;
+const CHUNK_SIZE: u64 = 96 * 1024 * 1024;
 
 const CHUNK_EXCESS: u64 = 64;
 
 struct Record {
-    max: f32,
-    min: f32,
-    count: u32,
-    sum: f32,
+    max: i32,
+    min: i32,
+    count: i32,
+    sum: i32,
 }
 
 impl Record {
     #[inline(always)]
-    fn new(value: f32) -> Self {
+    fn new(value: i32) -> Self {
         Record {
             max: value,
             min: value,
@@ -45,34 +45,28 @@ fn read_chunk(file: &File, offset: u64) -> Vec<u8> {
 }
 
 #[inline(always)]
-fn s_parse(b: &[u8]) -> f32 {
-    let mut f: f32 = 0.0;
-    let mut sign = 1.0;
-    let mut seen_dot = false;
-    let mut pos = 1.0f32;
+fn fixed_point_parse(b: &[u8]) -> i32 {
+    let mut res = 0;
+    let mut sign = false;
+    let mut pos = 1;
 
     for byte in b {
         match byte {
             b'-' => {
-                sign = -1.0;
+                sign = true;
             }
-            b'.' => {
-                seen_dot = true;
-                pos = 0.1;
+            b'0'..=b'9' => {
+                res += pos * (*byte - b'0') as i32;
+                pos *= 10;
             }
-            byte => {
-                f += sign * pos * (byte - 48) as f32;
-
-                if !seen_dot {
-                    pos *= 10.0;
-                } else {
-                    pos /= 10.0;
-                }
-            }
+            _ => {}
         }
     }
 
-    f
+    if sign {
+        res = -res;
+    }
+    res
 }
 
 type Key = [u8; 32];
@@ -94,7 +88,7 @@ fn process_chunk_v2(buffer: Vec<u8>) -> AHashMap<Key, Record> {
         let mut arr = Key::default();
         arr[..semi - line_ind].copy_from_slice(&buffer[line_ind..semi]);
 
-        let value = s_parse(&buffer[semi + 1..end]);
+        let value = fixed_point_parse(&buffer[semi + 1..end]);
 
         if let Some(record) = bmap.get_mut(&arr) {
             record.count += 1;
@@ -161,12 +155,10 @@ fn main() -> AnyResult<()> {
         let name_buff: Key = unsafe { std::mem::transmute(name) };
         let line = format!(
             "{} Avg:{:.1}, Min:{}, Max:{}\n",
-            String::from_utf8_lossy(&name_buff)
-                .trim()
-                .trim_matches(char::from(0)),
-            rec.sum / rec.count as f32,
-            rec.min,
-            rec.max
+            String::from_utf8_lossy(&name_buff).trim_matches(char::from(0)),
+            rec.sum as f32 / 10.0 / rec.count as f32,
+            rec.min as f32 / 10.0,
+            rec.max as f32 / 10.0
         );
         file.write(&line.as_bytes())?;
     }
