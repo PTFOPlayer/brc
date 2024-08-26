@@ -29,7 +29,7 @@ impl Record {
 fn read_chunk(file: &File, offset: u64) -> Vec<u8> {
     let mut buffer = vec![0; (CHUNK_SIZE + CHUNK_EXCESS) as usize];
     let len = buffer.len() - CHUNK_EXCESS as usize;
-    file.read_exact_at(buffer.as_mut(), offset).unwrap();
+    let readed = file.read_at(buffer.as_mut(), offset).unwrap();
 
     let mut start = 0 as usize;
 
@@ -37,10 +37,18 @@ fn read_chunk(file: &File, offset: u64) -> Vec<u8> {
         start += 1;
     }
 
-    let mut end = len - 1;
-    while buffer[end] != b'\n' {
-        end += 1;
-    }
+    let end = if readed == buffer.len() {
+        
+        let mut end = len - 1;
+        
+        while buffer[end] != b'\n' {
+            end += 1;
+        }
+        end
+    } else {
+        readed
+    };
+    
     buffer[start..end].to_vec()
 }
 
@@ -119,7 +127,7 @@ fn main() -> AnyResult<()> {
     let mut handles = Vec::with_capacity(256);
 
     let creation_start = Instant::now();
-    while offset < file.metadata()?.len() - CHUNK_SIZE {
+    while offset < file.metadata()?.len() {
         let file_c = file.try_clone()?;
         let handle: thread::JoinHandle<AHashMap<Key, Record>> =
             thread::spawn(move || process_chunk_v2(read_chunk(&file_c, offset)));
