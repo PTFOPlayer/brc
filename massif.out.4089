@@ -1,0 +1,626 @@
+desc: (none)
+cmd: ./target/release/brc measurements.txt
+time_unit: i
+#-----------
+snapshot=0
+#-----------
+time=0
+mem_heap_B=0
+mem_heap_extra_B=0
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=1
+#-----------
+time=293136
+mem_heap_B=472
+mem_heap_extra_B=16
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=2
+#-----------
+time=489756
+mem_heap_B=37056
+mem_heap_extra_B=3328
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=3
+#-----------
+time=716755
+mem_heap_B=5637276872
+mem_heap_extra_B=230800
+mem_stacks_B=0
+heap_tree=detailed
+n2: 5637276872 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 5637148160 0x111302: std::sys_common::backtrace::__rust_begin_short_backtrace (in /home/patrykzen/projects/rust/brc/target/release/brc)
+  n1: 5637148160 0x1123A9: core::ops::function::FnOnce::call_once{{vtable.shim}} (in /home/patrykzen/projects/rust/brc/target/release/brc)
+   n1: 5637148160 0x157A1A: std::sys::pal::unix::thread::Thread::new::thread_start (in /home/patrykzen/projects/rust/brc/target/release/brc)
+    n1: 5637148160 0x49046D6: start_thread (pthread_create.c:447)
+     n0: 5637148160 0x4988413: clone (clone.S:100)
+ n0: 128712 in 21 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=4
+#-----------
+time=868933
+mem_heap_B=13489021448
+mem_heap_extra_B=541552
+mem_stacks_B=0
+heap_tree=detailed
+n2: 13489021448 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 13488890240 0x111302: std::sys_common::backtrace::__rust_begin_short_backtrace (in /home/patrykzen/projects/rust/brc/target/release/brc)
+  n1: 13488890240 0x1123A9: core::ops::function::FnOnce::call_once{{vtable.shim}} (in /home/patrykzen/projects/rust/brc/target/release/brc)
+   n1: 13488890240 0x157A1A: std::sys::pal::unix::thread::Thread::new::thread_start (in /home/patrykzen/projects/rust/brc/target/release/brc)
+    n1: 13488890240 0x49046D6: start_thread (pthread_create.c:447)
+     n0: 13488890240 0x4988413: clone (clone.S:100)
+ n0: 131208 in 21 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=5
+#-----------
+time=9552182
+mem_heap_B=13690347907
+mem_heap_extra_B=549557
+mem_stacks_B=0
+heap_tree=peak
+n2: 13690347907 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 13589553600 0x111302: std::sys_common::backtrace::__rust_begin_short_backtrace (in /home/patrykzen/projects/rust/brc/target/release/brc)
+  n1: 13589553600 0x1123A9: core::ops::function::FnOnce::call_once{{vtable.shim}} (in /home/patrykzen/projects/rust/brc/target/release/brc)
+   n1: 13589553600 0x157A1A: std::sys::pal::unix::thread::Thread::new::thread_start (in /home/patrykzen/projects/rust/brc/target/release/brc)
+    n1: 13589553600 0x49046D6: start_thread (pthread_create.c:447)
+     n0: 13589553600 0x4988413: clone (clone.S:100)
+ n0: 100794307 in 22 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=6
+#-----------
+time=2062820796
+mem_heap_B=13489071456
+mem_heap_extra_B=541536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=7
+#-----------
+time=2071503847
+mem_heap_B=13489071307
+mem_heap_extra_B=541565
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=8
+#-----------
+time=4125002190
+mem_heap_B=13388458200
+mem_heap_extra_B=537536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=9
+#-----------
+time=4133685303
+mem_heap_B=13388458039
+mem_heap_extra_B=537577
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=10
+#-----------
+time=6187299149
+mem_heap_B=13287844944
+mem_heap_extra_B=533536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=11
+#-----------
+time=6195982260
+mem_heap_B=13287844789
+mem_heap_extra_B=533571
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=12
+#-----------
+time=8249586889
+mem_heap_B=13187231688
+mem_heap_extra_B=529536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=13
+#-----------
+time=8258269988
+mem_heap_B=13187231529
+mem_heap_extra_B=529575
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=14
+#-----------
+time=10312455510
+mem_heap_B=13086618432
+mem_heap_extra_B=525536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=15
+#-----------
+time=10321138611
+mem_heap_B=13086618272
+mem_heap_extra_B=525576
+mem_stacks_B=0
+heap_tree=detailed
+n2: 13086618272 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 12985573440 0x111302: std::sys_common::backtrace::__rust_begin_short_backtrace (in /home/patrykzen/projects/rust/brc/target/release/brc)
+  n1: 12985573440 0x1123A9: core::ops::function::FnOnce::call_once{{vtable.shim}} (in /home/patrykzen/projects/rust/brc/target/release/brc)
+   n1: 12985573440 0x157A1A: std::sys::pal::unix::thread::Thread::new::thread_start (in /home/patrykzen/projects/rust/brc/target/release/brc)
+    n1: 12985573440 0x49046D6: start_thread (pthread_create.c:447)
+     n0: 12985573440 0x4988413: clone (clone.S:100)
+ n0: 101044832 in 22 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=16
+#-----------
+time=12375126086
+mem_heap_B=12986005176
+mem_heap_extra_B=521536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=17
+#-----------
+time=12383809216
+mem_heap_B=12986005019
+mem_heap_extra_B=521573
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=18
+#-----------
+time=14437024299
+mem_heap_B=12885391920
+mem_heap_extra_B=517536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=19
+#-----------
+time=14445707424
+mem_heap_B=12885391768
+mem_heap_extra_B=517568
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=20
+#-----------
+time=16499268901
+mem_heap_B=12784778664
+mem_heap_extra_B=513536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=21
+#-----------
+time=16507952014
+mem_heap_B=12784778518
+mem_heap_extra_B=513562
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=22
+#-----------
+time=18561223975
+mem_heap_B=12684165408
+mem_heap_extra_B=509536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=23
+#-----------
+time=18569907094
+mem_heap_B=12684165259
+mem_heap_extra_B=509565
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=24
+#-----------
+time=20623336847
+mem_heap_B=12583552152
+mem_heap_extra_B=505536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=25
+#-----------
+time=20632019940
+mem_heap_B=12583552001
+mem_heap_extra_B=505567
+mem_stacks_B=0
+heap_tree=detailed
+n2: 12583552001 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 12482256640 0x111302: std::sys_common::backtrace::__rust_begin_short_backtrace (in /home/patrykzen/projects/rust/brc/target/release/brc)
+  n1: 12482256640 0x1123A9: core::ops::function::FnOnce::call_once{{vtable.shim}} (in /home/patrykzen/projects/rust/brc/target/release/brc)
+   n1: 12482256640 0x157A1A: std::sys::pal::unix::thread::Thread::new::thread_start (in /home/patrykzen/projects/rust/brc/target/release/brc)
+    n1: 12482256640 0x49046D6: start_thread (pthread_create.c:447)
+     n0: 12482256640 0x4988413: clone (clone.S:100)
+ n0: 101295361 in 22 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=26
+#-----------
+time=22685524071
+mem_heap_B=12482938896
+mem_heap_extra_B=501536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=27
+#-----------
+time=22694207186
+mem_heap_B=12482938734
+mem_heap_extra_B=501578
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=28
+#-----------
+time=24747788797
+mem_heap_B=12382325640
+mem_heap_extra_B=497536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=29
+#-----------
+time=24756471905
+mem_heap_B=12382325474
+mem_heap_extra_B=497582
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=30
+#-----------
+time=26809818846
+mem_heap_B=12281712384
+mem_heap_extra_B=493536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=31
+#-----------
+time=26818501966
+mem_heap_B=12281712237
+mem_heap_extra_B=493563
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=32
+#-----------
+time=28872405395
+mem_heap_B=12181099128
+mem_heap_extra_B=489536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=33
+#-----------
+time=28881088534
+mem_heap_B=12181098979
+mem_heap_extra_B=489565
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=34
+#-----------
+time=30934683050
+mem_heap_B=12080485872
+mem_heap_extra_B=485536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=35
+#-----------
+time=30943366176
+mem_heap_B=12080485712
+mem_heap_extra_B=485576
+mem_stacks_B=0
+heap_tree=detailed
+n2: 12080485712 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 11978939840 0x111302: std::sys_common::backtrace::__rust_begin_short_backtrace (in /home/patrykzen/projects/rust/brc/target/release/brc)
+  n1: 11978939840 0x1123A9: core::ops::function::FnOnce::call_once{{vtable.shim}} (in /home/patrykzen/projects/rust/brc/target/release/brc)
+   n1: 11978939840 0x157A1A: std::sys::pal::unix::thread::Thread::new::thread_start (in /home/patrykzen/projects/rust/brc/target/release/brc)
+    n1: 11978939840 0x49046D6: start_thread (pthread_create.c:447)
+     n0: 11978939840 0x4988413: clone (clone.S:100)
+ n0: 101545872 in 22 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=36
+#-----------
+time=32997010707
+mem_heap_B=11979872616
+mem_heap_extra_B=481536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=37
+#-----------
+time=33005693828
+mem_heap_B=11979872456
+mem_heap_extra_B=481576
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=38
+#-----------
+time=35059599850
+mem_heap_B=11879259360
+mem_heap_extra_B=477536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=39
+#-----------
+time=35068282967
+mem_heap_B=11879259207
+mem_heap_extra_B=477569
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=40
+#-----------
+time=37122198390
+mem_heap_B=11778646104
+mem_heap_extra_B=473536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=41
+#-----------
+time=37130881540
+mem_heap_B=11778645962
+mem_heap_extra_B=473558
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=42
+#-----------
+time=39184275243
+mem_heap_B=11678032848
+mem_heap_extra_B=469536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=43
+#-----------
+time=39192958330
+mem_heap_B=11678032695
+mem_heap_extra_B=469569
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=44
+#-----------
+time=41246518379
+mem_heap_B=11577419592
+mem_heap_extra_B=465536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=45
+#-----------
+time=41255201508
+mem_heap_B=11577419425
+mem_heap_extra_B=465583
+mem_stacks_B=0
+heap_tree=detailed
+n2: 11577419425 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 11475623040 0x111302: std::sys_common::backtrace::__rust_begin_short_backtrace (in /home/patrykzen/projects/rust/brc/target/release/brc)
+  n1: 11475623040 0x1123A9: core::ops::function::FnOnce::call_once{{vtable.shim}} (in /home/patrykzen/projects/rust/brc/target/release/brc)
+   n1: 11475623040 0x157A1A: std::sys::pal::unix::thread::Thread::new::thread_start (in /home/patrykzen/projects/rust/brc/target/release/brc)
+    n1: 11475623040 0x49046D6: start_thread (pthread_create.c:447)
+     n0: 11475623040 0x4988413: clone (clone.S:100)
+ n0: 101796385 in 22 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=46
+#-----------
+time=43308467964
+mem_heap_B=11476806336
+mem_heap_extra_B=461536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=47
+#-----------
+time=43317151070
+mem_heap_B=11476806186
+mem_heap_extra_B=461566
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=48
+#-----------
+time=45371628244
+mem_heap_B=11376193080
+mem_heap_extra_B=457536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=49
+#-----------
+time=45380311375
+mem_heap_B=11376192930
+mem_heap_extra_B=457566
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=50
+#-----------
+time=47433888171
+mem_heap_B=11275579824
+mem_heap_extra_B=453536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=51
+#-----------
+time=47442571284
+mem_heap_B=11275579682
+mem_heap_extra_B=453558
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=52
+#-----------
+time=49496233882
+mem_heap_B=11174966568
+mem_heap_extra_B=449536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=53
+#-----------
+time=49504916987
+mem_heap_B=11174966421
+mem_heap_extra_B=449563
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=54
+#-----------
+time=51558788420
+mem_heap_B=11074353312
+mem_heap_extra_B=445536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=55
+#-----------
+time=51567471543
+mem_heap_B=11074353156
+mem_heap_extra_B=445572
+mem_stacks_B=0
+heap_tree=detailed
+n2: 11074353156 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 10972306240 0x111302: std::sys_common::backtrace::__rust_begin_short_backtrace (in /home/patrykzen/projects/rust/brc/target/release/brc)
+  n1: 10972306240 0x1123A9: core::ops::function::FnOnce::call_once{{vtable.shim}} (in /home/patrykzen/projects/rust/brc/target/release/brc)
+   n1: 10972306240 0x157A1A: std::sys::pal::unix::thread::Thread::new::thread_start (in /home/patrykzen/projects/rust/brc/target/release/brc)
+    n1: 10972306240 0x49046D6: start_thread (pthread_create.c:447)
+     n0: 10972306240 0x4988413: clone (clone.S:100)
+ n0: 102046916 in 22 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=56
+#-----------
+time=53620935417
+mem_heap_B=10973740056
+mem_heap_extra_B=441536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=57
+#-----------
+time=53629618468
+mem_heap_B=10973739912
+mem_heap_extra_B=441560
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=58
+#-----------
+time=55682973704
+mem_heap_B=10873126800
+mem_heap_extra_B=437536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=59
+#-----------
+time=55691656836
+mem_heap_B=10873126652
+mem_heap_extra_B=437564
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=60
+#-----------
+time=57745425403
+mem_heap_B=10772513544
+mem_heap_extra_B=433536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=61
+#-----------
+time=57754108502
+mem_heap_B=10772513385
+mem_heap_extra_B=433575
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=62
+#-----------
+time=59808017966
+mem_heap_B=10671900288
+mem_heap_extra_B=429536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=63
+#-----------
+time=59816701112
+mem_heap_B=10671900143
+mem_heap_extra_B=429561
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=64
+#-----------
+time=61870172920
+mem_heap_B=10571287032
+mem_heap_extra_B=425536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=65
+#-----------
+time=61878856019
+mem_heap_B=10571286878
+mem_heap_extra_B=425570
+mem_stacks_B=0
+heap_tree=detailed
+n2: 10571286878 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 10468989440 0x111302: std::sys_common::backtrace::__rust_begin_short_backtrace (in /home/patrykzen/projects/rust/brc/target/release/brc)
+  n1: 10468989440 0x1123A9: core::ops::function::FnOnce::call_once{{vtable.shim}} (in /home/patrykzen/projects/rust/brc/target/release/brc)
+   n1: 10468989440 0x157A1A: std::sys::pal::unix::thread::Thread::new::thread_start (in /home/patrykzen/projects/rust/brc/target/release/brc)
+    n1: 10468989440 0x49046D6: start_thread (pthread_create.c:447)
+     n0: 10468989440 0x4988413: clone (clone.S:100)
+ n0: 102297438 in 22 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=66
+#-----------
+time=63933066951
+mem_heap_B=10470673776
+mem_heap_extra_B=421536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=67
+#-----------
+time=63941750084
+mem_heap_B=10470673625
+mem_heap_extra_B=421567
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=68
+#-----------
+time=65995180725
+mem_heap_B=10370060520
+mem_heap_extra_B=417536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=69
+#-----------
+time=66003863876
+mem_heap_B=10370060370
+mem_heap_extra_B=417566
+mem_stacks_B=0
+heap_tree=empty
