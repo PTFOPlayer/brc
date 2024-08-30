@@ -4,7 +4,9 @@ use std::{env::args, fs::File, io::Write, os::unix::fs::FileExt, thread, time::I
 
 use ahash::AHashMap;
 
-const CHUNK_SIZE: u64 = 96 * 1024 * 1024;
+const DISPATCH_LOOPS: usize = 8;
+
+const CHUNK_SIZE: u64 = 64 * 1024 * 1024;
 
 const CHUNK_EXCESS: u64 = 64;
 
@@ -31,6 +33,7 @@ fn read_chunk(file: &File, offset: u64, buffer: &mut [u8]) -> (usize, usize) {
     let len = buffer.len() - CHUNK_EXCESS as usize;
 
     if file.read_exact_at(buffer, offset).is_err() {
+        buffer.fill(0);
         file.read_at(buffer, offset).unwrap();
     }
 
@@ -80,8 +83,7 @@ fn process_chunk_v2(buffer: &[u8]) -> AHashMap<Key, Record> {
     let mut prev_end = 0;
     while let (Some(semi), Some(end)) = (end.next(), end.next()) {
         let mut arr = Key::default();
-        arr[..semi - prev_end].copy_from_slice(&buffer[prev_end..semi]);   
-
+        arr[..semi - prev_end].copy_from_slice(&buffer[prev_end..semi]);
 
         let value = fixed_point_parse(&buffer[semi + 1..end]);
 
@@ -94,9 +96,38 @@ fn process_chunk_v2(buffer: &[u8]) -> AHashMap<Key, Record> {
             bmap.insert(arr, Record::new(value));
         }
 
-        prev_end = end+1;
+        prev_end = end + 1;
     }
     bmap
+}
+
+fn dispatch(file: &File, offset: u64, file_len: u64) -> AHashMap<Key, Record> {
+    let mut buffer = vec![0; (CHUNK_SIZE + CHUNK_EXCESS) as usize];
+    let mut map = AHashMap::<Key, Record>::with_capacity(512);
+    let mut maps: Vec<AHashMap<Key, Record>> = vec![];
+
+    for i in 0..DISPATCH_LOOPS {
+        if (offset + CHUNK_SIZE * (i as u64)) >= file_len {
+            break;
+        }
+        let (start, end) = read_chunk(&file, offset + CHUNK_SIZE * i as u64, &mut buffer);
+        maps.push(process_chunk_v2(&buffer[start..end]));
+    }
+
+    for l_map in maps {
+        for (key, other) in l_map {
+            if let Some(record) = map.get_mut(&key) {
+                record.count += other.count;
+                record.sum += other.sum;
+                record.max = record.max.max(other.max);
+                record.min = record.min.min(other.min);
+            } else {
+                map.insert(key, other);
+            }
+        }
+    }
+
+    map
 }
 
 fn main() -> AnyResult<()> {
@@ -110,39 +141,18 @@ fn main() -> AnyResult<()> {
     let file = File::open(path)?;
 
     let mut offset = 0;
-    let mut idx = 0;
     let mut handles: Vec<thread::JoinHandle<AHashMap<[u8; 32], Record>>> = Vec::with_capacity(256);
 
     let creation_start = Instant::now();
-    while offset < file.metadata()?.len() {
+    let file_len = file.metadata()?.len();
+    while offset < file_len {
         let file_c = file.try_clone()?;
-        let handle: thread::JoinHandle<AHashMap<Key, Record>> = thread::Builder::new().name(format!("idx:{idx}")).spawn(move || {
-            let mut buffer = vec![0; (CHUNK_SIZE + CHUNK_EXCESS) as usize];
-            let (start, end) = read_chunk(&file_c, offset, &mut buffer);
-            process_chunk_v2(&buffer[start..end])
-        }).unwrap();
-        offset += CHUNK_SIZE;
+        let handle: thread::JoinHandle<AHashMap<Key, Record>> =
+            thread::spawn(move || dispatch(&file_c, offset, file_len));
+        offset += CHUNK_SIZE * DISPATCH_LOOPS as u64;
         handles.push(handle);
-        idx+=1;
     }
     let creation_finish = creation_start.elapsed();
-
-    // let mut prev_end = 0;
-    // while offset < file.metadata()?.len() {
-    //     let mut buffer = vec![b'\n'; (CHUNK_SIZE + CHUNK_EXCESS) as usize];
-    //     let file_c = file.try_clone()?;
-    //     let (start, end) = read_chunk(&file_c, offset, &mut buffer);
-    //     println!(
-    //         "s: {}, e: {}, d: {}, s_c: {}, e_c: {}",
-    //         start + offset as usize,
-    //         end + offset as usize,
-    //         start + offset as usize - prev_end,
-    //         char::from(buffer[start]),
-    //         char::from(buffer[end])
-    //     );
-    //     prev_end = end + offset as usize;
-    //     offset += CHUNK_SIZE;
-    // }
 
     println!("handles:{}", handles.len());
     let awaiting_start = Instant::now();
