@@ -1,4 +1,5 @@
 use anyhow::Result as AnyResult;
+use memchr::memchr2;
 use std::{env::args, fs::File, io::Write, os::unix::fs::FileExt, thread, time::Instant};
 
 use ahash::AHashMap;
@@ -26,30 +27,23 @@ impl Record {
     }
 }
 
-fn read_chunk(file: &File, offset: u64) -> Vec<u8> {
-    let mut buffer = vec![0; (CHUNK_SIZE + CHUNK_EXCESS) as usize];
+fn read_chunk(file: &File, offset: u64, buffer: &mut [u8]) -> (usize, usize) {
     let len = buffer.len() - CHUNK_EXCESS as usize;
-    let readed = file.read_at(buffer.as_mut(), offset).unwrap();
 
-    let mut start = 0 as usize;
-
-    while offset != 0 && buffer[start + 1] != b'\n' {
-        start += 1;
+    if file.read_exact_at(buffer, offset).is_err() {
+        file.read_at(buffer, offset).unwrap();
     }
 
-    let end = if readed == buffer.len() {
-        
-        let mut end = len - 1;
-        
-        while buffer[end] != b'\n' {
-            end += 1;
-        }
-        end
+    let start = if offset != 0 {
+        memchr::memchr(b'\n', &buffer).unwrap() + 1
     } else {
-        readed
+        0
     };
-    
-    buffer[start..end].to_vec()
+
+    let mem = memchr2(b'\n', 0, &buffer[len..]).unwrap();
+    let end = mem + len + 1;
+
+    (start, end)
 }
 
 #[inline(always)]
@@ -79,22 +73,15 @@ fn fixed_point_parse(b: &[u8]) -> i32 {
 
 type Key = [u8; 32];
 
-fn process_chunk_v2(buffer: Vec<u8>) -> AHashMap<Key, Record> {
+fn process_chunk_v2(buffer: &[u8]) -> AHashMap<Key, Record> {
     let mut bmap = AHashMap::<Key, Record>::with_capacity(512);
-    let mut line_ind = 0usize;
-    let len = buffer.len();
-    while line_ind < len {
-        let mut end = line_ind;
-        let mut semi = line_ind;
-        while end < len && buffer[end] != b'\n' {
-            if buffer[end] == b';' {
-                semi = end;
-            }
-            end += 1;
-        }
 
+    let mut end = memchr::memchr2_iter(b';', b'\n', &buffer);
+    let mut prev_end = 0;
+    while let (Some(semi), Some(end)) = (end.next(), end.next()) {
         let mut arr = Key::default();
-        arr[..semi - line_ind].copy_from_slice(&buffer[line_ind..semi]);
+        arr[..semi - prev_end].copy_from_slice(&buffer[prev_end..semi]);   
+
 
         let value = fixed_point_parse(&buffer[semi + 1..end]);
 
@@ -107,9 +94,8 @@ fn process_chunk_v2(buffer: Vec<u8>) -> AHashMap<Key, Record> {
             bmap.insert(arr, Record::new(value));
         }
 
-        line_ind = end + 1;
+        prev_end = end+1;
     }
-
     bmap
 }
 
@@ -124,17 +110,39 @@ fn main() -> AnyResult<()> {
     let file = File::open(path)?;
 
     let mut offset = 0;
-    let mut handles = Vec::with_capacity(256);
+    let mut idx = 0;
+    let mut handles: Vec<thread::JoinHandle<AHashMap<[u8; 32], Record>>> = Vec::with_capacity(256);
 
     let creation_start = Instant::now();
     while offset < file.metadata()?.len() {
         let file_c = file.try_clone()?;
-        let handle: thread::JoinHandle<AHashMap<Key, Record>> =
-            thread::spawn(move || process_chunk_v2(read_chunk(&file_c, offset)));
+        let handle: thread::JoinHandle<AHashMap<Key, Record>> = thread::Builder::new().name(format!("idx:{idx}")).spawn(move || {
+            let mut buffer = vec![0; (CHUNK_SIZE + CHUNK_EXCESS) as usize];
+            let (start, end) = read_chunk(&file_c, offset, &mut buffer);
+            process_chunk_v2(&buffer[start..end])
+        }).unwrap();
         offset += CHUNK_SIZE;
         handles.push(handle);
+        idx+=1;
     }
     let creation_finish = creation_start.elapsed();
+
+    // let mut prev_end = 0;
+    // while offset < file.metadata()?.len() {
+    //     let mut buffer = vec![b'\n'; (CHUNK_SIZE + CHUNK_EXCESS) as usize];
+    //     let file_c = file.try_clone()?;
+    //     let (start, end) = read_chunk(&file_c, offset, &mut buffer);
+    //     println!(
+    //         "s: {}, e: {}, d: {}, s_c: {}, e_c: {}",
+    //         start + offset as usize,
+    //         end + offset as usize,
+    //         start + offset as usize - prev_end,
+    //         char::from(buffer[start]),
+    //         char::from(buffer[end])
+    //     );
+    //     prev_end = end + offset as usize;
+    //     offset += CHUNK_SIZE;
+    // }
 
     println!("handles:{}", handles.len());
     let awaiting_start = Instant::now();
