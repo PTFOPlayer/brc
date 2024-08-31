@@ -4,9 +4,9 @@ use std::{env::args, fs::File, io::Write, os::unix::fs::FileExt, thread, time::I
 
 use ahash::AHashMap;
 
-const DISPATCH_LOOPS: usize = 8;
+const DISPATCH_LOOPS: usize = 128;
 
-const CHUNK_SIZE: u64 = 64 * 1024 * 1024;
+const CHUNK_SIZE: u64 = 1 * 1024 * 1024;
 
 const CHUNK_EXCESS: u64 = 64;
 
@@ -102,7 +102,7 @@ fn process_chunk_v2(buffer: &[u8]) -> AHashMap<Key, Record> {
 }
 
 fn dispatch(file: &File, offset: u64, file_len: u64) -> AHashMap<Key, Record> {
-    let mut buffer = vec![0; (CHUNK_SIZE + CHUNK_EXCESS) as usize];
+    let mut buffer = [0; (CHUNK_SIZE + CHUNK_EXCESS) as usize];
     let mut map = AHashMap::<Key, Record>::with_capacity(512);
     let mut maps: Vec<AHashMap<Key, Record>> = vec![];
 
