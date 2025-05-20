@@ -1,6 +1,8 @@
 use anyhow::Result as AnyResult;
 use memchr::memchr2;
-use std::{env::args, fs::File, io::Write, os::unix::fs::FileExt, thread, time::Instant};
+use std::{
+    env::args, fs::File, io::Write, os::unix::fs::FileExt, sync::mpsc, thread, time::Instant,
+};
 
 use ahash::AHashMap;
 
@@ -37,11 +39,7 @@ fn read_chunk(file: &File, offset: u64, buffer: &mut [u8]) -> (usize, usize) {
         file.read_at(buffer, offset).unwrap();
     }
 
-    let start = if offset != 0 {
-        memchr::memchr(b'\n', &buffer).unwrap() + 1
-    } else {
-        0
-    };
+    let start = (offset != 0) as usize * (memchr::memchr(b'\n', &buffer).unwrap() + 1);
 
     let mem = memchr2(b'\n', 0, &buffer[len..]).unwrap();
     let end = mem + len + 1;
@@ -53,25 +51,24 @@ fn read_chunk(file: &File, offset: u64, buffer: &mut [u8]) -> (usize, usize) {
 fn fixed_point_parse(b: &[u8]) -> i32 {
     let mut res = 0;
     let mut sign = false;
-    let mut pos = 1;
 
-    for byte in b {
+    for &byte in b {
         match byte {
             b'-' => {
                 sign = true;
             }
-            b'0'..=b'9' => {
-                res += pos * (*byte - b'0') as i32;
-                pos *= 10;
+            b'0'..b':' => {
+                res += res * 10 + (byte - b'0') as i32;
             }
             _ => {}
         }
     }
 
     if sign {
-        res = -res;
+        -res
+    } else {
+        res
     }
-    res
 }
 
 type Key = [u8; 32];
@@ -110,7 +107,7 @@ fn dispatch(file: &File, offset: u64, file_len: u64) -> AHashMap<Key, Record> {
         if (offset + CHUNK_SIZE * (i as u64)) >= file_len {
             break;
         }
-        let (start, end) = read_chunk(&file, offset + CHUNK_SIZE * i as u64, &mut buffer);
+        let (start, end) = read_chunk(&file, offset + (CHUNK_SIZE * i as u64), &mut buffer);
         maps.push(process_chunk_v2(&buffer[start..end]));
     }
 
@@ -136,38 +133,42 @@ fn main() -> AnyResult<()> {
     let path = args.next().expect("file not found");
     println!("found file: {}", path);
 
-    let start = Instant::now();
-
     let file = File::open(path)?;
 
-    let mut offset = 0;
-    let mut handles: Vec<thread::JoinHandle<AHashMap<[u8; 32], Record>>> = Vec::with_capacity(256);
+    let start = Instant::now();
 
+    let mut offset = 0;
+    let (tx, rx) = mpsc::channel();
+    let mut parts = 0;
     let creation_start = Instant::now();
     let file_len = file.metadata()?.len();
+
     while offset < file_len {
         let file_c = file.try_clone()?;
-        let handle: thread::JoinHandle<AHashMap<Key, Record>> =
-            thread::spawn(move || dispatch(&file_c, offset, file_len));
+        let tx = tx.clone();
+
+        thread::spawn(move || {
+            tx.send(dispatch(&file_c, offset, file_len)).unwrap();
+        });
+
         offset += CHUNK_SIZE * DISPATCH_LOOPS as u64;
-        handles.push(handle);
+        parts += 1;
     }
     let creation_finish = creation_start.elapsed();
 
-    println!("handles:{}", handles.len());
+    println!("handles:{}", parts);
     let awaiting_start = Instant::now();
     let mut map = AHashMap::<Key, Record>::with_capacity(512);
-    for handle in handles {
-        let handle_map = handle.join().unwrap();
-        for (key, other) in handle_map {
-            if let Some(record) = map.get_mut(&key) {
-                record.count += other.count;
-                record.sum += other.sum;
-                record.max = record.max.max(other.max);
-                record.min = record.min.min(other.min);
-            } else {
-                map.insert(key, other);
-            }
+    for _ in 0..parts {
+        for (key, other) in rx.recv().unwrap().drain() {
+            map.entry(key)
+                .and_modify(|record| {
+                    record.count += other.count;
+                    record.sum += other.sum;
+                    record.max = record.max.max(other.max);
+                    record.min = record.min.min(other.min);
+                })
+                .or_insert(other);
         }
     }
 
