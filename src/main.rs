@@ -1,5 +1,4 @@
 use anyhow::Result as AnyResult;
-use memchr::memchr2;
 use std::{
     env::args, fs::File, io::Write, os::unix::fs::FileExt, sync::mpsc, thread, time::Instant,
 };
@@ -32,36 +31,53 @@ impl Record {
 }
 
 fn read_chunk(file: &File, offset: u64, buffer: &mut [u8]) -> (usize, usize) {
-    let len = buffer.len() - CHUNK_EXCESS as usize;
+    let total_len = buffer.len();
+    let core_len = total_len - CHUNK_EXCESS as usize;
 
     if file.read_exact_at(buffer, offset).is_err() {
-        buffer.fill(0);
-        file.read_at(buffer, offset).unwrap();
+        match file.read_at(buffer, offset) {
+            Ok(n) => buffer[n..].fill(0),
+            Err(_) => {
+                buffer.fill(0);
+                return (0, 0);
+            }
+        }
     }
 
-    let start = (offset != 0) as usize * (memchr::memchr(b'\n', &buffer).unwrap() + 1);
+    let start = if offset != 0 {
+        memchr::memchr(b'\n', buffer).map_or(0, |i| i + 1)
+    } else {
+        0
+    };
 
-    let mem = memchr2(b'\n', 0, &buffer[len..]).unwrap();
-    let end = mem + len + 1;
+    let end = match memchr::memchr2(b'\n', 0, &buffer[core_len..]) {
+        Some(i) => core_len + i + 1,
+        None => total_len,
+    };
 
     (start, end)
 }
 
 #[inline(always)]
 fn fixed_point_parse(b: &[u8]) -> i32 {
-    let mut res = 0;
+    let mut res: i32 = 0;
     let mut sign = false;
 
-    for &byte in b {
-        match byte {
-            b'-' => {
-                sign = true;
-            }
-            b'0'..b':' => {
-                res += res * 10 + (byte - b'0') as i32;
-            }
-            _ => {}
+    let mut i = 0;
+
+    if !b.is_empty() && b[0] == b'-' {
+        sign = true;
+        i += 1;
+    }
+
+    while i < b.len() {
+        let byte = b[i];
+        if byte >= b'0' && byte <= b'9' {
+            res = res * 10 + ((byte - b'0') as i32);
+        } else {
+            break;
         }
+        i += 1;
     }
 
     if sign {
@@ -100,18 +116,15 @@ fn process_chunk_v2(buffer: &[u8]) -> AHashMap<Key, Record> {
 
 fn dispatch(file: &File, offset: u64, file_len: u64) -> AHashMap<Key, Record> {
     let mut buffer = [0; (CHUNK_SIZE + CHUNK_EXCESS) as usize];
-    let mut map = AHashMap::<Key, Record>::with_capacity(512);
-    let mut maps: Vec<AHashMap<Key, Record>> = vec![];
+    let mut map = AHashMap::<Key, Record>::with_capacity(1024);
 
     for i in 0..DISPATCH_LOOPS {
         if (offset + CHUNK_SIZE * (i as u64)) >= file_len {
             break;
         }
         let (start, end) = read_chunk(&file, offset + (CHUNK_SIZE * i as u64), &mut buffer);
-        maps.push(process_chunk_v2(&buffer[start..end]));
-    }
+        let l_map = process_chunk_v2(&buffer[start..end]);
 
-    for l_map in maps {
         for (key, other) in l_map {
             if let Some(record) = map.get_mut(&key) {
                 record.count += other.count;
