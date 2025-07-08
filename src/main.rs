@@ -5,6 +5,9 @@ use std::{
 
 use ahash::AHashMap;
 
+#[global_allocator]
+static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
+
 const DISPATCH_LOOPS: usize = 128;
 
 const CHUNK_SIZE: u64 = 1 * 1024 * 1024;
